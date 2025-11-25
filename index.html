@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ExamPleRun 1.0 (Rebuild)</title>
+    <style>
+        /* MATRIX THEME CSS */
+        body {
+            background-color: #000;
+            color: #00FF41; 
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            touch-action: none;
+            overflow: hidden;
+        }
+
+        /* YÜKLEME EKRANI CSS */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #00FF41;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        /* YÜKLEME BAR ANIMASYONU */
+        @keyframes loading-flicker {
+            0%, 100% { width: 0%; opacity: 0.5; }
+            50% { width: 80%; opacity: 1; }
+        }
+        #loading-bar {
+            height: 3px;
+            width: 80%;
+            background-color: #00FF41;
+            margin-top: 20px;
+            box-shadow: 0 0 10px #00FF41;
+            overflow: hidden;
+        }
+        #loading-progress {
+            height: 100%;
+            width: 0;
+            background-color: #00CC33;
+            animation: loading-flicker 2s infinite; /* 2 saniye sonra yükleme bitiyor */
+        }
+
+
+        /* ANİMASYONLU MENÜ ARKA PLANI */
+        @keyframes flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; }
+            20%, 24%, 55% { opacity: 0.8; }
+        }
+        #menu-screen {
+            animation: flicker 4s infinite alternate;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #main-container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative; 
+        }
+        
+        /* Şık Butonlar */
+        .menu-btn, .action-btn {
+            width: 80%;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #00FF41; 
+            color: #000;
+            border: 2px solid #00AA22;
+            border-radius: 5px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.7);
+        }
+        .menu-btn:hover { 
+            background-color: #00CC33; 
+            transform: scale(1.03); 
+            box-shadow: 0 0 20px rgba(0, 255, 65, 1);
+        }
+
+        /* Başlık Şıklığı */
+        #main-title {
+            font-size: 2.8em;
+            margin-bottom: 20px;
+            cursor: pointer;
+            text-shadow: 0 0 10px #00FF41; 
+        }
+        
+        /* Yeni Kayıt Kutusu */
+        #stat-panel {
+            background: #080808;
+            padding: 20px;
+            margin-top: 15px;
+            border: 1px solid #00AA22;
+            width: 90%;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+        }
+        #stat-panel h3 {
+            color: #00FF41;
+            margin-top: 0;
+            text-shadow: 0 0 5px #00FF41;
+        }
+        
+        /* Skor Paneli */
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            padding: 5px 0;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+            position: relative;
+        }
+        #score { color: #FFD700; } 
+        #level-display { color: #00FFFF; }
+        #total-gold { color: #FFD700; }
+        #msg { color: #00FF41; }
+
+        /* KÜÇÜK MENÜ İKONU (Oyun Ekranı) */
+        #menu-icon {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 1.5em;
+            cursor: pointer;
+            z-index: 10;
+            color: #00FF41;
+            text-shadow: 0 0 5px #00FF41;
+            padding: 5px;
+        }
+
+        /* ANİMASYON: LEVEL UP */
+        @keyframes pulse-level {
+            0% { transform: scale(1.0); color: #00FFFF; }
+            50% { transform: scale(1.2); color: #FFD700; text-shadow: 0 0 8px #FFD700; }
+            100% { transform: scale(1.0); color: #00FFFF; }
+        }
+        .level-up-animate {
+            animation: pulse-level 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div style="font-size: 1.5em; text-shadow: 0 0 10px #00FF41;">SİSTEM BAŞLATILIYOR...</div>
+        <div id="loading-bar">
+            <div id="loading-progress"></div>
+        </div>
+        <div style="font-size: 0.8em; margin-top: 10px;">ExamPleRun 1.0 (Final Rebuild)</div>
+    </div>
+
+    <div id="main-container" style="display:none;">
+
+        <div id="menu-screen">
+            <h1 id="main-title" onclick="triggerMatrixEE()">ExamPleRun</h1>
+            
+            <button class="menu-btn" onclick="showScreen('game')">KOŞTUR (START)</button>
+            <button class="menu-btn" onclick="showScreen('settings')">AYARLAR</button>
+            
+            <div id="stat-panel">
+                <h3>SİSTEM KAYITLARI</h3>
+                <p>Mevcut Kademen: <span id="menu-level">1</span></p>
+                <p>Toplam Altın (XP): <span id="menu-gold">0</span></p>
+                <p>En Yüksek Skor: <span id="high-score" style="color:#FF0000;">0</span></p>
+                <div id="msg">Sistem Yüklendi. İyi Oyunlar.</div>
+            </div>
+        </div>
+        
+        <div id="settings-screen" style="display:none;">
+            <h1>AYARLAR</h1>
+            <div id="stat-panel">
+                <div style="padding: 10px 5px; border-bottom: 1px dashed #333;">
+                    <span>Versiyon Bilgisi</span>
+                    <span style="color:#00FF41;">1.0 (Final Rebuild)</span>
+                </div>
+                <div style="padding: 10px 5px; margin-top: 15px;">
+                    <button class="action-btn" style="width: 100%; background-color: #FF4100; color:#000; box-shadow:none;" onclick="resetGame()">KAYDI SIFIRLA (DİKKAT!)</button>
+                </div>
+            </div>
+            <button class="menu-btn" style="width: 80%; margin-top: 30px;" onclick="showScreen('menu')">MENÜYE DÖN</button>
+        </div>
+
+
+        <div id="game-screen" style="display:none; flex-direction: column; align-items: center; position: relative;">
+            <div id="menu-icon" onclick="showScreen('menu')">☰</div>
+            <div class="score-board">
+                <span>Anlık Puan: <span id="score">0</span></span>
+                <span>Kademe: <span id="level-display">1</span></span>
+                <span>Toplam Altın: <span id="total-gold">0</span></span>
+            </div>
+
+            <canvas id="gameCanvas"></canvas>
+        </div>
+    </div>
+
+<script>
+    // --- GİZLİ ÖZELLİK VE DURUM DEĞİŞKENLERİ ---
+    let totalGold = 0;          
+    let highScore = 0;
+    let matrixEEActive = false; 
+    const GOLD_PER_LEVEL = 150; 
+    let currentLevel = 1; 
+    
+    // --- CANVAS VE OYUN AYARLARI ---
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = Math.min(window.innerWidth - 20, 380); 
+    canvas.height = window.innerHeight * 0.6;
+
+    const player = { 
+        x: canvas.width / 2 - 20, 
+        y: canvas.height - 50, 
+        size: 40, 
+        text: "E", 
+        baseColor: [0, 255, 65] 
+    };
+
+    let blocks = [];
+    let score = 0;       
+    let isRunning = false;
+    let frame = 0;
+    let animationId = null;
+
+    // Matrix Code Rain Değişkenleri
+    const font_size = 12;
+    const columns = canvas.width/font_size;
+    let drops = [];
+    for(let x = 0; x < columns; x++) drops[x] = 1; 
+
+    // --- YENİ PASS/KAYIT SİSTEMİ (LocalStorage) ---
+    function loadGame() {
+        totalGold = localStorage.getItem('totalGold') ? parseInt(localStorage.getItem('totalGold')) : 0;
+        highScore = localStorage.getItem('highScore') ? parseInt(localStorage.getItem('highScore')) : 0;
+        
+        currentLevel = calculateLevel(totalGold);
+        
+        updateMenuDisplay();
+    }
+
+    function saveGame() {
+        localStorage.setItem('totalGold', totalGold);
+        localStorage.setItem('highScore', highScore);
+    }
+    
+    function resetGame() {
+        if (confirm("Tüm kayıtları (Altın, Kademe, Skor) SIFIRLAMAK istediğinizden emin misiniz?")) {
+            localStorage.removeItem('totalGold');
+            localStorage.removeItem('highScore');
+            totalGold = 0;
+            highScore = 0;
+            currentLevel = 1;
+            matrixEEActive = false;
+            updateMenuDisplay();
+            showScreen('menu');
+        }
+    }
+
+    // --- KADEME HESAPLAMA ve ANİMASYON ---
+    function calculateLevel(gold) {
+        return Math.floor(gold / GOLD_PER_LEVEL) + 1;
+    }
+    
+    function levelUpAnimation() {
+        const levelSpans = [
+            document.getElementById('level-display'), 
+            document.getElementById('menu-level'), 
+            document.getElementById('total-gold'),
+            document.getElementById('menu-gold')
+        ];
+        levelSpans.forEach(span => {
+            span.classList.add('level-up-animate');
+            setTimeout(() => {
+                span.classList.remove('level-up-animate');
+            }, 500); 
+        });
+    }
+
+    function updateDisplay() {
+        const newLevel = calculateLevel(totalGold);
+        if (newLevel > currentLevel) {
+            currentLevel = newLevel;
+            levelUpAnimation();
+        }
+        
+        document.getElementById("total-gold").innerText = totalGold;
+        document.getElementById("level-display").innerText = currentLevel;
+    }
+    
+    function updateMenuDisplay() {
+        document.getElementById("menu-gold").innerText = totalGold;
+        document.getElementById("menu-level").innerText = currentLevel;
+        document.getElementById("high-score").innerText = highScore;
+    }
+
+    // --- MATRİX KOD YAĞMURU ÇİZİMİ (Azaltılmış Efekt) ---
+    function drawMatrixCode() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#00AA22'; 
+        ctx.font = font_size + 'px monospace';
+
+        for(let i = 0; i < drops.length; i++) {
+            const text = String.fromCharCode(0x30A0 + Math.random() * 96);
+            
+            if (i % 3 === 0) {
+                 ctx.fillText(text, i*font_size, drops[i]*font_size);
+            }
+           
+            if(drops[i]*font_size > canvas.height && Math.random() > 0.9) { 
+                drops[i] = 0;
+            }
+            drops[i]+=2;
+        }
+    }
+
+
+    // --- DOKUNMATİK KONTROLLER ---
+    canvas.addEventListener("touchmove", function(e) {
+        if (!isRunning) return; 
+        e.preventDefault(); 
+        
+        let touchX = e.touches[0].clientX;
+        let rect = canvas.getBoundingClientRect();
+        let relativeX = touchX - rect.left;
+
+        player.x = relativeX - (player.size / 2);
+
+        if(player.x < 0) player.x = 0;
+        if(player.x + player.size > canvas.width) player.x = canvas.width - player.size;
+    }, { passive: false });
+    
+    // --- OYUN BAŞLATMA ---
+    function startGame() {
+        if (animationId) cancelAnimationFrame(animationId);
+        
+        score = 0;
+        blocks = [];
+        frame = 0;
+        isRunning = true;
+        
+        player.x = canvas.width / 2 - (player.size / 2);
+        
+        document.getElementById("score").innerText = "0";
+        updateDisplay(); 
+        
+        gameLoop(); 
+    }
+
+    // --- OYUN DÖNGÜSÜ ---
+    function gameLoop() {
+        if (!isRunning) {
+            cancelAnimationFrame(animationId);
+            return;
+        }
+        
+        drawMatrixCode();
+        
+        const pulse = Math.sin(frame * 0.05) * 50 + 205; 
+        const pulsatingColor = `rgb(0, ${Math.round(pulse)}, 0)`;
+
+        ctx.font = player.size + "px monospace"; 
+        ctx.fillStyle = matrixEEActive ? '#FF00FF' : pulsatingColor; 
+        ctx.textAlign = "center";           
+        ctx.fillText(player.text, player.x + player.size / 2, player.y + player.size - 5); 
+
+        frame++;
+        if (frame % 30 === 0) {
+            let size = Math.random() * 30 + 20; 
+            let randomX = Math.random() * (canvas.width - size);
+            
+            const isBonus = Math.random() < 0.3;
+            const color = isBonus ? "#FFD700" : "#FF0000"; 
+            const value = isBonus ? 25 : 10;
+            
+            blocks.push({ x: randomX, y: -size, w: size, h: size, color: color, value: value, isBonus: isBonus });
+        }
+
+        for (let i = 0; i < blocks.length; i++) {
+            let b = blocks[i];
+            b.y += 5; 
+
+            ctx.fillStyle = b.color; 
+            ctx.fillRect(b.x, b.y, b.w, b.h);
+
+            if (
+                player.x < b.x + b.w &&
+                player.x + player.size > b.x &&
+                player.y < b.y + b.h &&
+                player.y + player.size > b.y
+            ) {
+                gameOver();
+                return;
+            }
+
+            if (b.y > canvas.height) {
+                blocks.splice(i, 1);
+                i--;
+                score += b.value; 
+                document.getElementById("score").innerText = score;
+            }
+        }
+        
+        animationId = requestAnimationFrame(gameLoop);
+    }
+
+    // --- OYUN BİTİŞİ VE ALTIN HESAPLAMA ---
+    function gameOver() {
+        isRunning = false;
+        
+        totalGold += score;
+        if (score > highScore) {
+            highScore = score;
+        }
+        saveGame();
+        
+        const gameOverColor = matrixEEActive ? "#FF00FF" : "#FF0000";
+
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = gameOverColor;
+        ctx.font = "bold 28px 'Courier New', monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("SİSTEM ÇÖKTÜ!", canvas.width / 2, canvas.height / 2 - 60);
+
+        ctx.font = "20px 'Courier New', monospace";
+        ctx.fillText(`Kazanılan Altın: +${score}`, canvas.width / 2, canvas.height / 2 - 20);
+        ctx.fillText(`Toplam Altın: ${totalGold}`, canvas.width / 2, canvas.height / 2 + 10);
+        ctx.fillText(`Yeni Kademen: ${calculateLevel(totalGold)}`, canvas.width / 2, canvas.height / 2 + 40);
+
+        updateDisplay(); 
+        
+        setTimeout(() => showScreen('menu'), 4000); 
+    }
+
+    // --- MATRİX EASTER EGG ---
+    let titleClickCount = 0;
+    function triggerMatrixEE() {
+        titleClickCount++;
+        const msg = document.getElementById('msg');
+        
+        if (titleClickCount >= 5 && !matrixEEActive) {
+            matrixEEActive = true;
+            document.getElementById('main-title').innerText = "ExamPleRun | THE ONE";
+            player.text = 'N'; // NEO
+            msg.innerText = "MATRIX KODU AÇILDI! 'E' Karakterin NEO oldu.";
+            msg.style.color = "#FF00FF";
+            titleClickCount = 0;
+        } else if (titleClickCount < 5) {
+            msg.innerText = `...${5 - titleClickCount} tık daha...`;
+            msg.style.color = "#FFD700";
+        }
+        setTimeout(() => msg.innerText = '', 2000);
+    }
+    
+    // --- GENEL EKRAN YÖNETİMİ ---
+    function showScreen(screen) {
+        document.getElementById('menu-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('settings-screen').style.display = 'none'; 
+        
+        if (screen === 'menu') {
+            document.getElementById('main-container').style.display = 'flex'; // Ana konteyneri göster
+            document.getElementById('menu-screen').style.display = 'block';
+            isRunning = false; 
+            updateMenuDisplay();
+        } else if (screen === 'game') {
+            document.getElementById('main-container').style.display = 'flex';
+            document.getElementById('game-screen').style.display = 'flex';
+            startGame(); 
+        } else if (screen === 'settings') { 
+            document.getElementById('main-container').style.display = 'flex';
+            document.getElementById('settings-screen').style.display = 'block';
+            isRunning = false; 
+        }
+        // Yükleme ekranını gizle (eğer açıksa)
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen.style.opacity !== '0') {
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                document.getElementById('main-container').style.display = 'flex';
+            }, 500);
+        }
+    }
+
+    // --- SAYFA BAŞLANGICI VE YÜKLEME SÜRESİ ---
+    window.onload = function() {
+        loadGame(); 
+        // 2 saniye sonra yükleme ekranını kapat ve menüyü aç
+        setTimeout(() => {
+            showScreen('menu');
+        }, 2000); 
+    }
+
+</script>
+</body>
+</html>
